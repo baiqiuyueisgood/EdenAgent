@@ -1,85 +1,132 @@
+<div align="center">
+
 # Eden Agent
 
-Execution policy: terminals, plugins, skills, MCP and connectors run with the current OS account permissions. Sandboxing is paused and requires developer review before restoration.
+**A place to meet again, with room for words left unfinished.**
 
-Canonical repository: [jiang357357357/EdenAgent](https://github.com/jiang357357357/EdenAgent)
+Character interaction · Long-term memory · Voice · Tools · Multi-agent collaboration
 
-A local-first, persistent TypeScript agent host using the public pi SDK.
-
-React / Vite · Electron · Node.js 22.23.1 · SQLite · WebSocket JSON-RPC
+[![CI](https://github.com/jiang357357357/EdenAgent/actions/workflows/ci.yml/badge.svg)](https://github.com/jiang357357357/EdenAgent/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-host-3178c6?logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22.23.1-339933?logo=nodedotjs&logoColor=white)
 
 [简体中文](README.md) · **English**
 
-> Migration is in progress. Recent business, recovery and distribution code has not been executed or accepted. Source availability does not prove completion of P0–P5. See the [implementation tracker](文档/技术/Eden%20Agent%20TS%20迁移实施跟踪.md) and [business plan](文档/技术/ts-migration/业务优先长期计划.md).
+[Quick start](#quick-start) · [What you can do together](#what-you-can-do-together) · [Documentation](文档/README.en.md)
 
-Eden Agent draws inspiration from the Shittim Chest in Blue Archive. It is an independent source-available project, unaffiliated with the original work or its publishers.
+</div>
 
-## Architecture
+> “And they shall make an ark of shittim wood…”<br>
+> “And there I will meet with thee…”
+>
+> — [Exodus 25:10, 25:22](https://en.wikisource.org/wiki/Bible_(King_James)/Exodus), King James Version, excerpts.
 
-Electron supervises two independent Node hosts: Eden (`mon`, port 40092) and Local (`local`, port 40093). The development web client uses port 40091. Each host calls pi through `packages/runtime-pi`; the browser accesses its selected realm through JSON-RPC and Blob endpoints.
+A desktop is a small world. When the screen lights up, a few lines of text, a voice, and a familiar figure can meet there.
 
-| Location | Responsibility |
+Eden Agent draws inspiration from the Shittim Chest in *Blue Archive*. The scripture's image of a meeting gives this project its opening: keeping memories worth carrying, giving shape to ideas, and sharing the work still ahead.
+
+May you find a way to continue yesterday's conversation when you open this window again, with tomorrow's plans still within reach.
+
+<p align="center">
+  <img src="docs/assets/eden-agent-runtime.png" alt="Eden Agent desktop with sessions, character replies, voice playback and character artwork" width="100%">
+  <br>
+  <sub>Desktop example from October 2, 2026. Characters and visual assets are configurable; the interface changes between versions.</sub>
+</p>
+
+Eden Agent is a local-first desktop agent built with TypeScript, React and Electron. Characters can talk with you, read files in a selected workspace, use tools and work on tasks. The local host persists conversations and memory; models can use cloud or local services.
+
+## What you can do together
+
+### Keep a page for what came before
+
+A preference mentioned in passing. An experience you talked about together. Small lines in a story worth keeping.
+
+Configure a character's profile, artwork and voice, and save what matters in long-term memory. Static and Spine artwork, speech synthesis and voice input give the conversation a face and a voice. Familiarity has room to grow with each meeting.
+
+### Walk through unfinished work together
+
+“Read this project and tell me what needs to change.”
+
+A stack of notes, a document waiting for its first sentence, an error waiting to be understood. There is often a stretch of road between an idea and its completion.
+
+Choose a workspace for the session. The agent can read, search, edit and run commands alongside you. Child agents can share a complex task; you can see how far the work has come, and what remains, in the conversation.
+
+### Leave tomorrow a note
+
+“Remember this and remind me when it is time.”
+
+Some words are for this moment. Others are left for tomorrow.
+
+Keep to-do items in memos, and use reminders and self-awake scheduling to bring a written plan back into view. Scheduling and notifications require their corresponding services and channels to be configured; voice features also need their services.
+
+## Capabilities
+
+| Capability | What it provides |
 | --- | --- |
-| `Server/src` | TypeScript host, business modules and transport |
-| `packages/runtime-pi` | The only package importing pi directly |
-| `packages/api`, `packages/store` | Protocol schemas, types, SQLite and migration infrastructure |
-| `packages/plugin-sdk`, `packages/plugin-host` | Agent-authored plugins and isolated version lifecycle |
-| `packages/execution`, `packages/integrations` | Execution boundaries and external integrations |
-| `frontend/web`, `frontend/desktop` | React client and Electron shell |
-| `Server/connectors/official` | TypeScript connector plugins and assets |
-| `Archive/2026-09-10-rust-connectors` | Archived Rust workers and helpers |
-| `Archive/2026-09-09-rust-runtime` | Historical Rust AgentCore and Server |
+| Characters and voice | Character profiles, static/Spine artwork, speech synthesis and voice input |
+| Sessions and memory | Streaming replies, session recovery, long-term memory and context compaction |
+| Files and workspaces | Per-session directories, file browsing/search/editing and system commands |
+| Multiple agents | Task delegation, progress inspection and result collection |
+| Skills and extensions | On-demand tool discovery/loading, skills, plugins, MCP and connectors |
+| Memos and self-awake | To-do items, reminders and scheduling through a configured service |
+| Two realms | Eden connects to Mon Core; Local uses independent local configuration and models |
 
-The host and connectors use Node/TypeScript. The separate Windows desktop pointer observer still uses Rust.
+Local-first describes the host and persistent data. Cloud models and external services still make network requests. The project is under active development; see the [implementation tracker](文档/技术/Eden%20Agent%20TS%20迁移实施跟踪.md) for verification evidence and remaining work.
 
-## Realms and models
+## Quick start
 
-The two hosts keep separate processes, capability tokens, databases, files and credentials. Events are committed before broadcast. Data roots are fixed at `Data/realms/mon` and `Data/realms/local`; legacy Agent data is ignored and never imported.
-
-Mon models come from verified Mon Core connections, including actor and director bindings. Local models use local configuration or `EDEN_AGENT_MODEL=provider/model`. Independent child-model profiles stay within their realm; updating a profile does not silently change existing task snapshots.
-
-## Development
-
-Use Node.js 22.23.1 and npm. Install root dependencies and the frontend packager dependencies:
+Use **Node.js 22.23.1, npm and Git**. Clone all submodules: Server and Frontend depend on shared packages and scripts in the main project.
 
 ```sh
+git clone --recurse-submodules https://github.com/jiang357357357/EdenAgent.git
+cd EdenAgent
 npm ci
 npm --prefix frontend ci
 ```
 
-Configure `.monconfig` from `.monconfig.example` as needed. Never commit real data, model credentials or capability tokens.
+On a fresh checkout, create the local `.monconfig` from `.monconfig.example`:
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the TS hosts, web client and Electron |
-| `npm run dev:server` | Start a single configured TS host |
-| `npm run dev:web` | Start the web client |
-| `npm run dev:desktop` | Start the desktop development environment |
-| `npm run generate:rpc` | Generate the browser entry from TS contracts and template |
-| `npm run build:server` | Build the host and offline migration tools |
+<details>
+<summary>Windows PowerShell</summary>
 
-These are script entry points, not claims of successful execution. Current work prioritizes business implementation, followed by writing tests; tests and acceptance runs require the user's explicit request.
+```powershell
+Copy-Item .monconfig.example .monconfig
+```
 
-Linux isolation uses bubblewrap and prlimit. Explicit Windows host execution through PowerShell has been implemented in source; there is no built-in Windows sandbox. Workspace commands can use an administrator-configured external isolation adapter; plugin, MCP and skill isolation still need platform integration. Packaging for an OS does not imply every isolated feature works there. Missing sandbox support must not silently fall back to host execution.
+</details>
 
-## Agent-authored plugins
+<details>
+<summary>Linux / macOS shell</summary>
 
-The `eden_plugin` tool and plugin development page expose guidance, draft read/write, validation, declared tests, exact-version installation and activation. Existing draft replacement requires its current `draftRevision`; compiled artifacts have a separate `revision` and require a matching successful report before installation.
+```sh
+cp .monconfig.example .monconfig
+```
 
-Workspace access needs user authorization. Generated code and editor templates do not run automatically. Generated plugins are constrained single-file TypeScript tools, not unrestricted npm applications. Connector components use the unified package registry, version authorization and isolated Node workers; each instance additionally requires resolved-resource grants.
+</details>
 
-## Migration and distribution
+Configure the local services, then start:
 
-See the [migration guide](文档/技术/ts-migration/数据迁移操作.md), [desktop distribution guide](文档/技术/ts-migration/桌面发行操作.md) and [script documentation](Script/Project/README.md).
+```sh
+npm run dev
+```
 
-The distribution workflow assembles TS, Node, Electron and portable connector workers. Signing, file inventories, separate version installation and managed launch tools are implemented in source. No signed release from the current changes has been built or accepted. Automatic extraction and managed launch are implemented in source. System shortcuts, launcher upgrades and complete data upgrade/rollback coordination remain unfinished. Selecting an older application does not restore its database schema.
+The development web client defaults to `http://127.0.0.1:40091`. Local uses local model configuration; Eden requires an available Mon Core service and its authentication configuration. Configure models, voices and character resources for your setup. See [development and runtime notes](文档/开发与运行.md) (Chinese) for details.
 
-Host execution uses the current OS account and does not isolate one realm's files from the other. Permission approval remains separate, and enabling host commands does not bypass sandbox requirements for MCP stdio, skills or plugins.
+## Documentation
 
-## Documentation and licensing
+- [Development and runtime notes](文档/开发与运行.md) (Chinese): architecture, models, data, scripts, extensions and execution policy.
+- [Documentation index](文档/README.en.md): designs, operations and historical references.
+- [Implementation tracker](文档/技术/Eden%20Agent%20TS%20迁移实施跟踪.md): verification results and remaining work.
+- [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md).
 
-[Design](文档/技术/Eden%20Agent%20TypeScript%20宿主与%20pi%20实现方案.md) · [Engineering constraints](文档/技术/Eden%20Agent%20TypeScript%20工程约束.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+## Use and licensing
 
-Character binaries are managed separately, for example in a local `AgentAssets` repository. Third-party characters, Spine assets, voices, models, game content and trademarks are not covered by this project's software license.
+Terminals, plugins, skills, MCP and connectors currently execute with the OS account's permissions. OS sandboxing is paused; tool approval, timeouts and cancellation remain active. The realms have separate processes and data, but host execution does not provide OS-level file or network isolation between them.
 
-Source is available for noncommercial use under [PolyForm Noncommercial 1.0.0](LICENSE), not an OSI-approved open-source license. Commercial use requires [separate written authorization](COMMERCIAL-LICENSE.md). See [LICENSING.md](LICENSING.md) and [third-party notices](THIRD-PARTY-NOTICES.md).
+Source is available for noncommercial use under [PolyForm Noncommercial 1.0.0](LICENSE). Commercial use requires [separate written authorization](COMMERCIAL-LICENSE.md). This is a source-available project, not an OSI-approved open-source license. See [LICENSING.md](LICENSING.md) for licensing history.
+
+The project is unaffiliated with *Blue Archive* or its publishers. Third-party characters, Spine assets, voices and models are not covered by the software license. The code repository does not include character binaries. See [third-party notices](THIRD-PARTY-NOTICES.md).
+
+---
+
+This small Eden is still taking shape. Leave a Star, share an Issue, or help us write the next page.

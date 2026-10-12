@@ -15,6 +15,7 @@ Design decisions, operations, extension protocols, and acceptance material
 
 | Document | Purpose | Language |
 | --- | --- | --- |
+| [Development and runtime (current TS host)](开发与运行.md) | Current architecture, source entry points, models, data, extensions and execution policy | Chinese |
 | [Suggested learning order](学习/顺序.md) | Recommended path through the source and architecture | Chinese |
 | [GitHub publishing checklist](PUBLISHING.md) | Credential, license, asset, and test checks before a public release | Chinese |
 | [Rust operations and recovery runbook](技术/Eden Agent%20Rust%20运行与故障恢复手册.md) | Build, startup, health checks, and failure recovery | Chinese |

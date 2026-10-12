@@ -7,6 +7,7 @@ import type { AgentHarnessTool } from '@earendil-works/pi-agent-core'
 import { toolFailureOutcome } from './tool-outcome.ts'
 import { toJson } from '@eden/api'
 import type { RuntimeCallbacks, RuntimeTool } from './contracts.ts'
+import { isRuntimePersistenceFailure } from './persistence-error.ts'
 
 export function adaptTool<TContext extends object | undefined = undefined>(tool: RuntimeTool, callbacks: RuntimeCallbacks, healthy: () => void, fail: (error: unknown) => never, callPrefix = ''): AgentHarnessTool<TContext> {
   if (tool.parameters.type !== 'object') throw new Error(`Tool "${tool.name}" parameters must have an object root`)
@@ -39,15 +40,21 @@ export function adaptTool<TContext extends object | undefined = undefined>(tool:
         const outcome = selected.failureOutcome?.(error) ?? toolFailureOutcome(error, cancellation)
         try { await callbacks.afterTool?.(invocationId, { error: error instanceof Error ? error.message : String(error) }, true, outcome) }
         catch (commitError) { fail(commitError) }
+        if (isRuntimePersistenceFailure(error)) fail(error)
         throw error
       }
       const output = toJson(result)
       const outcome = selected.outcome?.(output) ?? 'completed'
       try { await callbacks.afterTool?.(invocationId, output, outcome !== 'completed', outcome) }
       catch (error) { fail(error) }
-      const projected = selected.modelResult?.(output) ?? output
+      const projected = projectResult(selected, output, fail)
       if (outcome !== 'completed') throw new Error(JSON.stringify({ outcome, result: projected }))
       return { content: [{ type: 'text', text: JSON.stringify(projected) }, ...images], details: output }
     },
   }
+}
+
+function projectResult(tool: RuntimeTool, output: import('@eden/api').JsonValue, fail: (error: unknown) => never) {
+  try { return tool.modelResult?.(output) ?? output }
+  catch (error) { return fail(error) }
 }

@@ -44,7 +44,7 @@ export type InitializeResult = { protocolVersion: number, serverName: string, se
 
 export type ReadyNotification = { connectionId: string, };
 
-export type SessionEnvironmentLocation = { country: string, region: string, city: string, district: string, latitude?: number | null, longitude?: number | null, };
+export type SessionEnvironmentLocation = { country: string, region: string, city: string, district: string, latitude?: number | null, longitude?: number | null, source?: string | null, updated_at?: string | null, accuracy?: number | null, };
 
 export type SessionEnvironment = { timezone: string, locale: string, location: SessionEnvironmentLocation, };
 
@@ -333,6 +333,7 @@ export interface RpcMethodMap {
   "turn.cancel": { params: SessionReadParams; result: { sessionId: SessionId; cancellationRequested: boolean } }
   "event.list": { params: EventListParams; result: EventPage }
   "message.list": { params: MessageListParams; result: EventPage }
+  "message.delete": { params: { sessionId: SessionId; messageId: string }; result: { sessionId: SessionId; messageId: string; deleted: true } }
   "permission.list": { params: PermissionListParams; result: PermissionRequestInfo[] }
   "permission.mode.get": { params: Record<string, never>; result: { mode: "restricted" | "full_access" | "takeover" } }
   "command.execution.get": { params: Record<string, never>; result: CommandExecutionInfo }

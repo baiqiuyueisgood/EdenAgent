@@ -33,4 +33,8 @@ export const sessionRpcMethods = {
   'session.set_participants': { params: sessionParticipantsSchema, result: sessionSummarySchema },
   'event.list': { params: eventListSchema, result: eventPageSchema },
   'message.list': { params: messageListSchema, result: eventPageSchema },
+  'message.delete': {
+    params: z.object({ sessionId: z.string().uuid(), messageId: z.string().min(1).max(200) }).strict(),
+    result: z.object({ sessionId: z.string().uuid(), messageId: z.string(), deleted: z.literal(true) }),
+  },
 } as const

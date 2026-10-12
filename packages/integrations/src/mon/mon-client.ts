@@ -55,8 +55,9 @@ export class MonClient {
     return this.request('PUT', endpoint, body, signal)
   }
 
-  async post(endpoint: string, body: JsonValue, signal?: AbortSignal): Promise<JsonValue> {
-    return this.request('POST', endpoint, body, signal)
+  async post(endpoint: string, body: JsonValue, signal?: AbortSignal, timeoutMs = 30000): Promise<JsonValue> {
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 180000) throw new Error('Invalid Mon request timeout')
+    return this.request('POST', endpoint, body, signal, timeoutMs)
   }
 
   realtimeSttUrl(): string {
@@ -88,11 +89,11 @@ export class MonClient {
     if (url.origin !== this.base.origin || !url.pathname.startsWith(this.base.pathname) || url.username || url.password || url.hash) throw new Error('Mon API path escaped its configured base')
   }
 
-  private async request(method: string, endpoint: string, body?: JsonValue, signal?: AbortSignal): Promise<JsonValue> {
+  private async request(method: string, endpoint: string, body?: JsonValue, signal?: AbortSignal, timeoutMs = 30000): Promise<JsonValue> {
     const url = this.endpointUrl(endpoint)
     const token = await this.credentials?.token(signal) ?? this.token
     const send = (token: string) => monFetch(url, {
-      method, redirect: 'error', signal: AbortSignal.any([AbortSignal.timeout(30000), ...(signal ? [signal] : [])]),
+      method, redirect: 'error', signal: AbortSignal.any([AbortSignal.timeout(timeoutMs), ...(signal ? [signal] : [])]),
       headers: { Authorization: `Token ${token}`, Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     })

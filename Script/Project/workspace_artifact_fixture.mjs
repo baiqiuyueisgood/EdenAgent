@@ -4,7 +4,8 @@ import { once } from 'node:events'
 import { existsSync } from 'node:fs'
 import { cp, mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { createRequire } from 'node:module'
 import { WebSocket } from 'ws'
 import { serverDependencyPlan } from './server_dependency_plan.mjs'
 
@@ -33,8 +34,9 @@ export async function copyArtifactRuntime(entry, portableRoot) {
   return path.join(destination, 'server', 'main.mjs')
 }
 
-export async function artifactHost(entry, root, dataRoot, { origin = 'local', coreUrl, model, serviceIdentity } = {}) {
-  const child = fork(entry, [], { cwd: root, execPath: process.execPath, execArgv: [], stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+export async function artifactHost(entry, root, dataRoot, { origin = 'local', coreUrl, model, serviceIdentity, source = false } = {}) {
+  const child = fork(entry, [], { cwd: root, execPath: process.execPath,
+    execArgv: source ? ['--import', pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href] : [], stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
     env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR,
       TEMP: root, TMP: root, EDEN_AGENT_RUNTIME_ORIGIN: origin, EDEN_AGENT_DATA_ROOT: dataRoot,
       EDEN_AGENT_PORT: '0', EDEN_AGENT_CAPABILITY_TOKEN: capabilityToken, EDEN_AGENT_LOG_FORMAT: 'json',

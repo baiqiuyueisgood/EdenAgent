@@ -7,9 +7,12 @@ export function historicalMessageSegment(index: number, total: number, content: 
 }
 
 export function publicHandoffHistory(history: unknown): string {
-  return '以下是交接前的公开对话记录，按时间顺序保留说话者身份：\n' + JSON.stringify(history)
+  return PUBLIC_HANDOFF_HISTORY_PREFIX + JSON.stringify(history)
 }
 
 export function legacyConversationHistory(entry: unknown): string {
-  return '以下是迁移前的历史上下文，保留原说话者、结果与摘要：\n' + JSON.stringify(entry)
+  return LEGACY_HISTORY_PREFIX + JSON.stringify(entry)
 }
+
+export const PUBLIC_HANDOFF_HISTORY_PREFIX = '以下是交接前的公开对话记录，按时间顺序保留说话者身份：\n'
+export const LEGACY_HISTORY_PREFIX = '以下是迁移前的历史上下文，保留原说话者、结果与摘要：\n'

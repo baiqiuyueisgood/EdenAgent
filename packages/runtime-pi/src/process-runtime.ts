@@ -39,7 +39,8 @@ export function createIsolatedRuntime(options: RuntimeOptions, policy: ProcessPo
     try {
       switch (method) {
         case 'checkpoint': return await options.callbacks.checkpoint(args[0] as RuntimeCheckpoint)
-        case 'event': return await options.callbacks.event(args[0] as string, args[1] as JsonValue)
+        case 'event': return await options.callbacks.event(args[0] as string, args[1] as JsonValue,
+          (args[2] as { coalesced?: boolean } | undefined)?.coalesced === true ? { coalesced: true } : undefined)
         case 'request': return await options.callbacks.request(args[0] as JsonValue)
         case 'response': return await options.callbacks.response?.(args[0] as JsonValue)
         default: throw new Error(`Unknown host operation: ${method}`)

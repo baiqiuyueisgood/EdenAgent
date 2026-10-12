@@ -41,3 +41,36 @@ test('Mon transport keeps credentials on its configured origin and follows the T
     await new Promise<void>(resolve => server.close(() => resolve()))
   }
 })
+
+test('file uploads can wait for Core receipts without changing the default timeout or ignoring cancellation', async t => {
+  const deadlines: number[] = []
+  const original = AbortSignal.timeout
+  t.mock.method(AbortSignal, 'timeout', (milliseconds: number) => {
+    deadlines.push(milliseconds)
+    return original(2000)
+  })
+  let notify!: () => void
+  const arrived = new Promise<void>(resolve => { notify = resolve })
+  const server = createServer(async (request, response) => {
+    for await (const _chunk of request) { /* consume the upload */ }
+    if (request.url === '/api/wait/') { notify(); return }
+    response.end(JSON.stringify({ success: true }))
+  })
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  const client = new MonClient(`http://127.0.0.1:${(server.address() as AddressInfo).port}`, 'test-token')
+  try {
+    await client.get('/api/check/')
+    await client.post('/api/default/', {})
+    await client.post('/api/file/', {}, undefined, 180000)
+    assert.deepEqual(deadlines, [30000, 30000, 180000])
+    for (const limit of [0, -1, 180001, Number.NaN]) await assert.rejects(client.post('/api/file/', {}, undefined, limit), /timeout/)
+    const controller = new AbortController()
+    const cancelled = assert.rejects(client.post('/api/wait/', {}, controller.signal, 180000))
+    await arrived
+    controller.abort()
+    await cancelled
+  } finally {
+    server.closeAllConnections()
+    await new Promise<void>(resolve => server.close(() => resolve()))
+  }
+})

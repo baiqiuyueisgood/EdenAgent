@@ -39,7 +39,8 @@ export interface RuntimeModel {
 
 export interface RuntimeCallbacks {
   checkpoint(snapshot: RuntimeCheckpoint): Promise<void>
-  event(kind: string, payload: JsonValue): Promise<void>
+  /** Private IPC hint; already coalesced batches commit before ACK rather than being sampled again. */
+  event(kind: string, payload: JsonValue, delivery?: { coalesced: true }): Promise<void>
   request(snapshot: JsonValue): Promise<void>
   response?(snapshot: JsonValue): Promise<void>
   beforeTool?(name: string, callId: string, revision: string, input: Record<string, unknown>): Promise<void>
