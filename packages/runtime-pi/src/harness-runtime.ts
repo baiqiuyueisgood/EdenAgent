@@ -1,5 +1,5 @@
 import { AgentHarness } from '@earendil-works/pi-agent-core'
-import { toJson } from '@eden/api'
+import { jsonSnapshot, toJson } from '@eden/api'
 import type { JsonValue } from '@eden/api'
 import type { EdenRuntime, RuntimeCallbacks, RuntimeOptions, RuntimeTool } from './contracts.ts'
 import { DurableSessionStorage } from './durable-session.ts'
@@ -88,7 +88,7 @@ export function createRuntime(options: RuntimeOptions, toolAdapter: typeof adapt
   harness.on('context', async event => ({ messages: storage.transientContext(await autoCompact(event.messages)) }))
   harness.subscribe(async event => {
     healthy()
-    try { await callbacks.event(event.type, toJson({ ...event, costConfigured: options.model.cost !== undefined })) }
+    try { await callbacks.event(event.type, jsonSnapshot({ ...event, costConfigured: options.model.cost !== undefined })) }
     catch (error) { fatal = error; throw error }
   })
   const run = (work: () => Promise<unknown>): Promise<JsonValue> => {

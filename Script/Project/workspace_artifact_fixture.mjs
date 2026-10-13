@@ -22,6 +22,8 @@ export async function copyArtifactRuntime(entry, portableRoot) {
   await cp(entry, path.join(destination, 'server', 'main.mjs'))
   const worker = path.join(path.dirname(entry), 'runtime-process.mjs')
   if (existsSync(worker)) await cp(worker, path.join(destination, 'server', 'runtime-process.mjs'))
+  const searchWorker = path.join(path.dirname(entry), 'workspace-search-worker.mjs')
+  if (existsSync(searchWorker)) await cp(searchWorker, path.join(destination, 'server', 'workspace-search-worker.mjs'))
   if (existsSync(modules)) await cp(modules, path.join(destination, 'node_modules'), { recursive: true, dereference: true })
   else {
     const repository = fileURLToPath(new URL('../../', import.meta.url))

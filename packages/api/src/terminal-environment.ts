@@ -13,6 +13,7 @@ export const terminalSetSchema = z.discriminatedUnion('scope', [
 export const terminalInfoSchema = z.object({
   platform: z.string(), hostShell: z.string(), hostAvailable: z.boolean(),
   wslDistributions: z.array(z.string()), deviceDefault: terminalTargetSchema,
+  wslDetectionError: z.string().max(8192).optional(),
   sessionOverride: terminalTargetSchema.nullable(), effective: terminalTargetSchema,
 })
 

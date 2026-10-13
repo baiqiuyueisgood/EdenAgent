@@ -1,6 +1,7 @@
 import { performance } from 'node:perf_hooks'
 import { setImmediate } from 'node:timers/promises'
 import type { JsonValue } from '@eden/api'
+import { jsonSnapshot } from '@eden/api'
 
 type Payload = Record<string, JsonValue>
 interface Update { kind: string; payload: Payload }
@@ -21,7 +22,7 @@ export class ProcessEventStream {
   private failed = false
   private active = false
   private stopped = false
-  private updates = 0
+  private yieldedAt = performance.now()
   private readonly intervalMs: number
   private readonly maxPendingBytes: number
   private readonly maxPendingUpdates: number
@@ -41,7 +42,7 @@ export class ProcessEventStream {
     if (this.active || this.flight || this.pending) throw new Error('Process stream is still active')
     this.active = true
     this.streamKey = undefined
-    this.updates = 0
+    this.yieldedAt = performance.now()
   }
 
   async event(kind: string, payload: JsonValue): Promise<void> {
@@ -55,7 +56,7 @@ export class ProcessEventStream {
     if (!this.active) throw new Error('A finished runtime cannot emit stream deltas')
     const first = key !== this.streamKey
     if (first) { await this.flush(); this.streamKey = key }
-    const latest = structuredClone(payload)
+    const latest = jsonSnapshot(payload) as Payload
     if (this.pending) {
       const previous = this.pending.payload.assistantMessageEvent as Payload
       const next = latest.assistantMessageEvent as Payload
@@ -69,7 +70,10 @@ export class ProcessEventStream {
     if (full) await this.flush()
     else if (first) this.startSend()
     else this.schedule()
-    if (++this.updates % 32 === 0) await setImmediate()
+    if (performance.now() - this.yieldedAt >= 5) {
+      await setImmediate()
+      this.yieldedAt = performance.now()
+    }
     this.assertHealthy()
   }
 

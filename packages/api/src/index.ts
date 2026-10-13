@@ -1,4 +1,5 @@
 export { jsonValue, toJson } from './json.ts'
+export { jsonSnapshot } from './json-snapshot.ts'
 export { sharedWorkspaceStatusSchema } from './shared-workspace-rpc.ts'
 export type { JsonValue } from './json.ts'
 export { runtimeOriginSchema, durableEventSchema, runtimeCheckpointSchema } from './runtime.ts'

@@ -14,6 +14,8 @@ const entry = path.join(root, 'dist/server/main.mjs')
 await stat(entry)
 const runtimeProcess = path.join(root, 'dist/server/runtime-process.mjs')
 await stat(runtimeProcess)
+const searchWorker = path.join(root, 'dist/server/workspace-search-worker.mjs')
+await stat(searchWorker)
 await import('../../Server/scripts/build-tui.mjs')
 const tuiEntry = path.join(root, 'dist/server/tui.mjs')
 await stat(tuiEntry)
@@ -30,6 +32,8 @@ try {
   await cp(`${entry}.map`, path.join(staging, 'server/main.mjs.map'))
   await cp(runtimeProcess, path.join(staging, 'server/runtime-process.mjs'))
   await cp(`${runtimeProcess}.map`, path.join(staging, 'server/runtime-process.mjs.map'))
+  await cp(searchWorker, path.join(staging, 'server/workspace-search-worker.mjs'))
+  await cp(`${searchWorker}.map`, path.join(staging, 'server/workspace-search-worker.mjs.map'))
   await cp(tuiEntry, path.join(staging, 'server/tui.mjs'))
   await cp(`${tuiEntry}.map`, path.join(staging, 'server/tui.mjs.map'))
   await mkdir(path.join(staging, 'bin'))
@@ -50,6 +54,7 @@ try {
     format: 1, platform: process.platform, arch: process.arch, node: process.versions.node,
     entry: 'server/main.mjs', lockSha256: sha256(lock), entrySha256: sha256(await readFile(entry)),
     runtimeProcess: 'server/runtime-process.mjs', runtimeProcessSha256: sha256(await readFile(runtimeProcess)),
+    searchWorker: 'server/workspace-search-worker.mjs', searchWorkerSha256: sha256(await readFile(searchWorker)),
     tuiEntry: 'server/tui.mjs', tuiEntrySha256: sha256(await readFile(tuiEntry)), tuiCommand: 'bin/eden',
     packages: packages.map(({ source, ...dependency }) => dependency), connectors,
   }, null, 2) + '\n')

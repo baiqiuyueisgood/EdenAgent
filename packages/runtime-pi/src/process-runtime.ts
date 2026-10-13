@@ -5,6 +5,7 @@ import type { EdenRuntime, RuntimeOptions } from './contracts.ts'
 import { ProcessPeer } from './process-protocol.ts'
 import type { ProcessMessage, ProcessOptions } from './process-protocol.ts'
 import { ProcessTools } from './process-tools.ts'
+import { ProcessDeadline } from './process-deadline.ts'
 
 declare const EDEN_BUNDLED_SERVER: boolean
 export interface IsolatedRuntime extends EdenRuntime { dispose(): Promise<void>; completeText(text: string): Promise<string> }
@@ -23,7 +24,6 @@ export function createIsolatedRuntime(options: RuntimeOptions, policy: ProcessPo
   let failure: Error | undefined
   let disposed = false
   let stopping: Promise<void> | undefined
-  let lastHeartbeat = Date.now()
   let initialized = false
   const healthy = () => { if (failure) throw failure; if (disposed) throw new Error('Runtime process is disposed') }
   const fail = (error: unknown): never => {
@@ -55,17 +55,15 @@ export function createIsolatedRuntime(options: RuntimeOptions, policy: ProcessPo
     failure ??= error
     controller.abort(failure)
     peer.close(failure)
-    clearInterval(watchdog)
+    watchdog.stop()
     child.kill()
   }
-  const watchdog = setInterval(() => {
-    const timeout = initialized ? policy.heartbeatTimeoutMs ?? 15_000 : policy.startupTimeoutMs ?? 60_000
-    if (Date.now() - lastHeartbeat > timeout) stop(new Error('Runtime process stopped responding; this turn was interrupted'))
-  }, Math.min(1_000, policy.heartbeatTimeoutMs ?? 1_000))
-  watchdog.unref()
+  const watchdog = new ProcessDeadline(() => initialized ? policy.heartbeatTimeoutMs ?? 15_000 : policy.startupTimeoutMs ?? 60_000,
+    () => stop(new Error('Runtime process stopped responding; this turn was interrupted')), Math.min(1_000, policy.heartbeatTimeoutMs ?? 1_000))
   child.on('message', AsyncResource.bind((message: ProcessMessage) => {
-    if (message.type === 'heartbeat') { lastHeartbeat = Date.now(); initialized = true }
-    else peer.receive(message)
+    watchdog.touch()
+    initialized = true
+    if (message.type !== 'heartbeat') peer.receive(message)
   }))
   child.on('error', error => stop(new Error('Runtime process could not start', { cause: error })))
   child.on('exit', (code, signal) => stop(new Error(`Runtime process exited (${signal ?? code}); this turn was interrupted`)))
@@ -82,9 +80,10 @@ export function createIsolatedRuntime(options: RuntimeOptions, policy: ProcessPo
     if (stopping) return stopping
     controller.abort(new Error('Runtime execution cancelled'))
     stopping = new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => { stop(new Error('Runtime cancellation deadline exceeded')); resolve() }, policy.abortTimeoutMs ?? 2_000)
-      void call<void>('abort').then(() => { clearTimeout(timer); resolve() }, error => {
-        clearTimeout(timer)
+      const timer = new ProcessDeadline(() => policy.abortTimeoutMs ?? 2_000,
+        () => { stop(new Error('Runtime cancellation deadline exceeded')); resolve() }, Math.min(250, policy.abortTimeoutMs ?? 250))
+      void call<void>('abort').then(() => { timer.stop(); resolve() }, error => {
+        timer.stop()
         if (disposed) resolve(); else reject(error)
       })
     })

@@ -109,3 +109,41 @@ test('auxiliary text completion runs in a child and preserves domain failures', 
   await assert.rejects(completeTextIsolated(request), TextCompletionError)
   assert.equal(records, 2)
 })
+
+test('healthy real child survives a host pause longer than its heartbeat timeout', async t => {
+  const runtime = createIsolatedRuntime({ sessionId: randomUUID(), systemPrompt: 'responsive', model: { provider: 'fixture', id: 'fixture',
+    baseUrl: 'http://127.0.0.1:1', contextWindow: 32000, maxTokens: 2048 },
+    tools: [], callbacks: callbacks().handlers }, { entry: new URL('./process-responsive-fixture.mjs', import.meta.url), heartbeatTimeoutMs: 150 })
+  t.after(() => runtime.dispose())
+  await runtime.snapshot()
+  const work = runtime.prompt('pause host')
+  const started = performance.now()
+  while (performance.now() - started < 650) { /* Queued child heartbeats must get a chance to reach the host. */ }
+  await work
+  await runtime.abort()
+  assert.ok(await runtime.snapshot())
+})
+
+test('business IPC is liveness evidence even when the heartbeat timer is absent', async t => {
+  let progress = 0
+  const runtime = createIsolatedRuntime({ sessionId: randomUUID(), systemPrompt: 'progress', model: { provider: 'fixture', id: 'fixture',
+    baseUrl: 'http://127.0.0.1:1', contextWindow: 32000, maxTokens: 2048 },
+    tools: [], callbacks: { ...callbacks().handlers, async event() { progress++ } } },
+    { entry: new URL('./process-responsive-fixture.mjs', import.meta.url), heartbeatTimeoutMs: 120 })
+  t.after(() => runtime.dispose())
+  await runtime.prompt('keep progressing')
+  assert.ok(progress >= 10)
+})
+
+test('uncooperative child cancellation still reaches its bounded deadline and rejects the active turn', async t => {
+  const runtime = createIsolatedRuntime({ sessionId: randomUUID(), systemPrompt: 'stall', model: { provider: 'fixture', id: 'fixture',
+    baseUrl: 'http://127.0.0.1:1', contextWindow: 32000, maxTokens: 2048 }, tools: [], callbacks: callbacks().handlers },
+    { entry: new URL('./process-fault-fixture.mjs', import.meta.url), abortTimeoutMs: 100 })
+  t.after(() => runtime.dispose())
+  const rejected = assert.rejects(runtime.prompt('stall'), /cancellation deadline exceeded/)
+  await delay(150)
+  const started = performance.now()
+  await runtime.abort()
+  await rejected
+  assert.ok(performance.now() - started < 2000)
+})
