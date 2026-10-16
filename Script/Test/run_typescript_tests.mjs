@@ -17,7 +17,10 @@ for (const root of roots) {
   console.log(`[test-discovery] ${root}: ${count}`)
 }
 
-const child = spawn(process.execPath, ['--import', 'tsx', '--test', ...relativeTests], {
+// Integration files create their own model/runtime processes; CPU-count parallelism exhausts startup deadlines.
+const concurrency = Number(process.env.EDEN_TEST_CONCURRENCY ?? 2)
+if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 32) throw new Error('EDEN_TEST_CONCURRENCY must be between 1 and 32')
+const child = spawn(process.execPath, ['--import', 'tsx', '--test', `--test-concurrency=${concurrency}`, ...relativeTests], {
   cwd: process.cwd(),
   env: process.env,
   stdio: 'inherit',

@@ -1,17 +1,30 @@
 # Project development scripts
 
-- `dev.mjs`：分别启动伊甸园 TS Server（默认 `40092`）与尘世 TS Server（默认 `40093`），再启动 Web 与 Electron；两个服务使用独立令牌和数据目录。支持持久双世界目录选择；创建的子进程退出时停止本次开发进程组，不把端口上的其他服务当作本次已启动实例。
+- `consolidate_self_awake.mjs`：角色自醒遗留计划维护，使用 `node --import tsx Script/Project/consolidate_self_awake.mjs --database <账号数据库>` 只读预览；应用需 `--apply --fingerprint <预览指纹>`，可用 `--scheduler-state <MonOs state.json>` 投递退役及角色计划。取得写锁后再次检查账号、指纹和空闲状态，保留原计划和历史，不调用模型。新宿主启动时也会自动执行同一角色收敛流程。
+
+- `dev.mjs`：先构建当前 Server 与隔离运行时，再分别启动伊甸园（默认 `40092`）与尘世（默认 `40093`），随后启动 Vite Web 与 Electron；两个服务使用独立令牌和数据目录。Server 源码修改后重启入口重新构建，Web 保留 Vite 热更新。支持持久双世界目录选择；创建的子进程退出时停止本次开发进程组，不把端口上的其他服务当作本次已启动实例。
+- `start_server.mjs`：默认先构建再启动单个世界的 Server；`--built` 使用已有制品，须自行确认其已更新。
 - `dev_desktop.mjs`：启动 Web 与桌面壳，Mon 后端沿用已运行的外部服务；桌面壳监管尘世本地运行时。Linux 上优先使用监听中 Mon Server 数据目录的能力令牌；其他环境可用 `EDEN_AGENT_MON_TOKEN_FILE` 显式指定。
 - `monconfig.mjs`：读取项目 `.monconfig`。
 - `monconfig.test.mjs`：配置读取测试。
 - `package_connector.mjs`：通过 `--source <目录> <目标>` 构建任意 TS 连接器包；Node worker、清单和资产及校验清单写入 `dist/connectors/<id>`。
 
-Server 使用 Node/TypeScript，`build_server.mjs` 构建主入口及六个独立迁移命令，`package_server.mjs` 组装 Node、运行依赖、连接器和迁移工具。宿主和连接器无需 Cargo；旧游戏连接器及其专属 Rust 归档已移除。
+Server 使用 Node/TypeScript，`build_server.mjs` 构建主入口、隔离运行时与工作区搜索 worker。隔离运行时将公开 SDK、Zod 和 TypeBox 一并打包，减少每轮进程重新加载大量模块的开销；主入口仍保留外置运行依赖。宿主和连接器无需 Cargo；旧游戏连接器及其专属 Rust 归档已移除。
 
 `dev.mjs` 的等待逻辑见 `runtime_children.mjs`；独立桌面入口有自己的启动等待流程。不得把旧入口的超时或原地复制行为视为当前实现。旧数据只能通过明确快照、暂存导入与激活恢复，不自动覆盖或迁移真实 Data。
 
 
-迁移实现说明见 `文档/技术/ts-migration/数据迁移操作.md`。当前阶段只编写业务与发行实现；未经用户明确要求，不运行测试、构建、迁移或冒烟检查，未运行不能宣称制品已验收。
+迁移实现说明见 `文档/技术/ts-migration/数据迁移操作.md`。测试执行以 AGENTS.md 与当前用户授权为准，只使用独立临时数据，不把真实用户数据库作为测试夹具。未运行的检查不能宣称已验收。`test:server` 默认同时运行两个测试文件，可用 `EDEN_TEST_CONCURRENCY`（1–32）调整；每个文件可能另开运行时进程，增加并发会影响超时测量。
+
+## 浏览器检查与受管 WSL 网页
+
+内置 `browser_inspect` 通过审批后，在独立无登录浏览器中读取渲染 DOM、控制台、页面错误和截图。宿主依赖固定版本 playwright-core，优先使用已安装的 Edge、Chrome 或 Chromium；不自动下载浏览器，不读取现有用户配置。截图存入当前世界 Blob，并作为图像传给模型。独立制品保留 playwright-core 为运行依赖。
+
+`manage_wsl_service.mjs` 导出 `prepare(configPath,input,userId)` 生成可审阅的 JSON、systemd 单元、隐藏启动器及 Windows 登录任务。服务配置包含 distribution、user、directory、bind、port、service（eden-agent-web-端口.service）和 taskName（Eden Agent WSL HTTP 端口）。安装前验证单元，禁止覆盖未知单元或任务；可指定经过命令、目录和所有者验证的现有 Python HTTP 进程接管。无需存储 sudo 密码。
+
+安装：`node Script/Project/manage_wsl_service.mjs install <config.json> [existing-pid]`。状态：`node Script/Project/manage_wsl_service.mjs status <config.json>`。卸载：`node Script/Project/manage_wsl_service.mjs uninstall <config.json>`。Windows 任务使用当前用户登录会话与普通权限，隐藏启动；监管器保持前台 WSL 连接，每 10 秒检查 HTTP 并启动或重启指定单元。它不停止发行版，也不接管未知端口进程。配置旁的 status.json 和 log 记录健康与错误。注销前未运行的登录触发器、整机重启和休眠恢复需分别验收。
+
+凭据维护：`inspect_latest_memory.mjs` 只读检查最近账号、聊天角色与记忆 id=30 的凭据标记，不输出正文。`sanitize_memory_credentials.mjs <database> <session> <character> <memory-id> <updated-at> [--apply]` 默认准备清理统计，应用时要求精确账号归属、记录版本及空闲状态；清理相关历史、重建请求内容哈希，并展开受影响流式消息，最后将该条记忆改为由用户保管的引用。该命令属于真实数据维护，不能拿真实库做测试。`npm run test:maintenance` 使用合成临时 SQLite 和独立 HTTP 服务验证维护逻辑。
 
 ## 当前浏览器与发行入口
 

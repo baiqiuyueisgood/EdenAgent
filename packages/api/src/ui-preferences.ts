@@ -10,7 +10,9 @@ const background = z
     imageBlobId: z.uuid().nullable().default(null),
   })
   .strict()
-export const baseThemeSchema = z.enum(["night", "cream", "peach", "sage", "lavender"])
+export const baseThemeSchema = z.enum([
+  "night", "cream", "peach", "sage", "lavender", "sky", "pink", "teal", "white", "navy", "forest",
+])
 export type BaseTheme = z.infer<typeof baseThemeSchema>
 export const accentThemeSchema = z.enum(["mist", "blue", "mint", "rose", "amber"])
 export type AccentTheme = z.infer<typeof accentThemeSchema>

@@ -189,3 +189,6 @@ export { replyLengthSchema } from "./ui-preferences.ts"
 export { DEFAULT_PANEL_OPACITY, panelOpacitySchema } from "./ui-preferences.ts"
 export { OperationFailure } from './operation-failure.ts'
 export type { OperationFailureDetails } from './operation-failure.ts'
+export { QQ_FILE_MAX_BYTES, QQ_FILE_MAX_BASE64_LENGTH, QQ_FILE_MAX_JSON_BYTES,
+  QQ_FILE_MAX_ATTACHMENTS, QQ_FILE_MAX_INPUT_BYTES, QQ_FILE_TRANSFER_TIMEOUT_MS } from './qq-files.ts'
+export { credentialHidden, credentialValues, redactCredentialText, redactCredentialJson } from './credential-redaction.ts'

@@ -24,7 +24,8 @@ export function adaptTool<TContext extends object | undefined = undefined>(tool:
       healthy()
       const cancellation = signal ?? new AbortController().signal
       cancellation.throwIfAborted()
-      try { await callbacks.beforeTool?.(selected.name, invocationId, selected.revision, input) }
+      try { await callbacks.beforeTool?.(selected.name, invocationId, selected.revision,
+        selected.auditInput ? z.record(z.string(), z.unknown()).parse(selected.auditInput(input)) : input) }
       catch (error) { fail(error) }
       let result
       let images: RuntimeImage[] = []

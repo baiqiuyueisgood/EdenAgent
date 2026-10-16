@@ -123,7 +123,7 @@ process.stderr.on("error", handleOutputError)
 
 function relay(readable, target) {
   if (!readable) return
-  readable.on("data", (chunk) => target.write(chunk))
+  readable.setEncoding("utf8").pipe(target, { end: false })
 }
 
 function handleChildError(label, child) {

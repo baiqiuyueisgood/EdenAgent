@@ -22,7 +22,7 @@ const descriptions = (tools: ToolDescription[]): RuntimeTool[] => tools.map(tool
   execute: async () => { throw new Error('Tool execution must use the host bridge') },
 }))
 const callbacks: RuntimeCallbacks = {
-  async checkpoint(snapshot) { await events.flush(); await peer.call('checkpoint', snapshot) },
+  async checkpoint(snapshot) { await events.flush(); return peer.call('checkpoint', snapshot) },
   event: (kind, payload) => events.event(kind, payload),
   async request(snapshot) { await events.flush(); await peer.call('request', snapshot) },
   async response(snapshot) { await events.flush(); await peer.call('response', snapshot) },

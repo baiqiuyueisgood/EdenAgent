@@ -62,8 +62,9 @@ test('file uploads can wait for Core receipts without changing the default timeo
     await client.get('/api/check/')
     await client.post('/api/default/', {})
     await client.post('/api/file/', {}, undefined, 180000)
-    assert.deepEqual(deadlines, [30000, 30000, 180000])
-    for (const limit of [0, -1, 180001, Number.NaN]) await assert.rejects(client.post('/api/file/', {}, undefined, limit), /timeout/)
+    await client.post('/api/file/', {}, undefined, 360000)
+    assert.deepEqual(deadlines, [30000, 30000, 180000, 360000])
+    for (const limit of [0, -1, 360001, Number.NaN]) await assert.rejects(client.post('/api/file/', {}, undefined, limit), /timeout/)
     const controller = new AbortController()
     const cancelled = assert.rejects(client.post('/api/wait/', {}, controller.signal, 180000))
     await arrived

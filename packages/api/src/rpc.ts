@@ -37,6 +37,7 @@ export const sessionCreateSchema = z.object({
   environment: sessionEnvironmentSchema.optional(),
 }).strict()
 export const sessionListSchema = z.object({ limit: z.number().int().min(1).max(1000).default(100), includeClosed: z.boolean().default(false),
+  archived: z.boolean().optional(),
   includeBackground: z.boolean().default(false), purpose: sessionPurposeSchema.optional(), sourceChannel: sessionSourceChannelSchema.optional() }).strict()
 export const turnStartSchema = z.object({
   sessionId: z.string().uuid(), text: z.string().max(1_000_000), attachments: attachmentRefsSchema.default([]),

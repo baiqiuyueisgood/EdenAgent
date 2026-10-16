@@ -16,6 +16,8 @@ export interface RuntimeTool {
   outcome?(result: JsonValue): ToolOutcome
   failureOutcome?(error: unknown): ToolOutcome
   modelResult?(result: JsonValue): JsonValue
+  /** Private host audit view; execution still receives the validated original input. */
+  auditInput?(input: Record<string, unknown>): JsonValue
   /** Host-owned discovery instructions included in each model request. */
   promptHint?: string
   resultImages?(result: JsonValue, signal: AbortSignal): Promise<readonly RuntimeImage[]>
@@ -38,7 +40,8 @@ export interface RuntimeModel {
 }
 
 export interface RuntimeCallbacks {
-  checkpoint(snapshot: RuntimeCheckpoint): Promise<void>
+  /** May return a validated privacy projection to keep the live context consistent with storage. */
+  checkpoint(snapshot: RuntimeCheckpoint): Promise<void | RuntimeCheckpoint>
   /** Private IPC hint; already coalesced batches commit before ACK rather than being sampled again. */
   event(kind: string, payload: JsonValue, delivery?: { coalesced: true }): Promise<void>
   request(snapshot: JsonValue): Promise<void>

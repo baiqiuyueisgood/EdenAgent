@@ -12,6 +12,8 @@ import { sessionWorkspacesSchema } from './schema/session-workspaces.ts'
 import { monDeliverySchema } from './schema/mon-delivery.ts'
 import { qqReferencesSchema } from './schema/qq-references.ts'
 import { messageStreamSchema } from './schema/message-stream.ts'
+import { selfAwakeRoleSchema } from './schema/self-awake-role.ts'
+import { sessionArchiveSchema } from './schema/session-archive.ts'
 
 export const migrations: readonly string[] = [
   sessionSchema[1],
@@ -149,6 +151,8 @@ export const migrations: readonly string[] = [
   monDeliverySchema,
   qqReferencesSchema,
   messageStreamSchema,
+  selfAwakeRoleSchema,
+  sessionArchiveSchema,
 ]
 
 export const databaseSchemaVersion = migrations.length

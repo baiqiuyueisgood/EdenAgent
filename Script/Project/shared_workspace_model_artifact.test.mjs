@@ -41,8 +41,9 @@ for (const origin of ['mon', 'local']) test(`compiled ${origin} host scopes shar
   const catalog = await client.rpc('tool.list')
   assert.ok(catalog.every(tool => !retired.includes(tool.name)))
   assert.equal(catalog.filter(tool => tool.name === name).length, origin === 'mon' ? 1 : 0)
-  for (const sharedFile of ['read_shared_file', 'write_shared_file', 'edit_shared_file'])
+  for (const sharedFile of ['read_shared_file', 'write_shared_file', 'edit_shared_file', 'delete_shared_file', 'rename_shared_file', 'restore_shared_file'])
     assert.equal(catalog.filter(tool => tool.name === sharedFile).length, origin === 'mon' ? 1 : 0)
+  for (const builtin of ['browser_inspect', 'delete_file', 'rename_file', 'restore_file']) assert.equal(catalog.filter(tool => tool.name === builtin).length, 1)
   if (origin === 'mon') {
     const tool = catalog.find(item => item.name === name)
     assert.equal(tool.source, 'builtin'); assert.equal(tool.exposure, 'direct')

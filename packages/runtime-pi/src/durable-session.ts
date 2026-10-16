@@ -9,9 +9,9 @@ export class DurableSessionStorage extends InMemorySessionStorage {
   private failed: unknown
   private transientMessage: AgentMessage | undefined
   private transientIndex = 0
-  private readonly commit: (snapshot: RuntimeCheckpoint) => Promise<void>
+  private readonly commit: (snapshot: RuntimeCheckpoint) => Promise<void | RuntimeCheckpoint>
 
-  constructor(sessionId: string, commit: (snapshot: RuntimeCheckpoint) => Promise<void>, checkpoint?: RuntimeCheckpoint, private transientNextUser = false) {
+  constructor(sessionId: string, commit: (snapshot: RuntimeCheckpoint) => Promise<void | RuntimeCheckpoint>, checkpoint?: RuntimeCheckpoint, private transientNextUser = false) {
     super({
       metadata: { id: sessionId, createdAt: checkpoint?.createdAt ?? new Date().toISOString() },
       entries: checkpoint ? parseCheckpoint(checkpoint, sessionId) : [],
@@ -38,9 +38,18 @@ export class DurableSessionStorage extends InMemorySessionStorage {
     const stored: SessionTreeEntry = transient ? { type: 'custom', customType: 'eden.transient_input',
       id: entry.id, parentId: entry.parentId, timestamp: entry.timestamp, data: { message: entry.message } } : entry
     const snapshot = await this.snapshot([...await this.getEntries(), stored])
-    try { await this.commit(snapshot) }
+    let projected = stored
+    try {
+      const committed = await this.commit(snapshot)
+      if (committed) {
+        const entries = parseCheckpoint(committed, snapshot.sessionId)
+        const candidate = entries.find(item => item.id === stored.id)
+        if (!candidate || candidate.type !== stored.type || candidate.parentId !== stored.parentId) throw new Error('Checkpoint projection changed entry linkage')
+        projected = candidate
+      }
+    }
     catch (error) { this.failed = new RuntimePersistenceError('Checkpoint commit failed', error); throw this.failed }
-    await super.appendEntry(stored)
+    await super.appendEntry(projected)
     if (transient) this.transientNextUser = false
   }
 

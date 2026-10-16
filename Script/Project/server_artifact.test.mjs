@@ -95,7 +95,7 @@ test('built dual hosts isolate sessions and blobs and preserve local state after
   assert.equal((await localClient.rpc('skill.catalog_status', {})).error, null)
   for (const connection of [localClient, monClient]) {
     const skills = await connection.rpc('skill.list', {})
-    assert.deepEqual(skills.map(skill => skill.name).sort(), ['eden-contact', 'eden-memory', 'eden-reminders', 'eden-self-awake', 'eden-workspace', 'web-research'])
+    assert.deepEqual(skills.map(skill => skill.name).sort(), ['eden-browser', 'eden-contact', 'eden-memory', 'eden-reminders', 'eden-self-awake', 'eden-shared-library', 'eden-workspace', 'web-research'])
     assert.ok(skills.every(skill => skill.content === null))
   }
   localClient.close(); await local.close()

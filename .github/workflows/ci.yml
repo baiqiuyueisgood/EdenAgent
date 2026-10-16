@@ -20,10 +20,7 @@ jobs:
           node-version: 22.23.1
           cache: npm
       - run: npm ci --ignore-scripts
-      - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap
-      - if: runner.os == 'Linux'
-        run: node --import tsx -e "import('@eden/execution').then(async ({probeSandbox}) => { const result = await probeSandbox(); if (!result.available) throw new Error(result.detail) })"
+      - run: node --import tsx -e "import('@eden/execution').then(async ({probeHostExecution}) => { const result = await probeHostExecution(); if (!result.available) throw new Error(result.detail) })"
       - run: npm run typecheck:server
       - run: npm run check:architecture
       - run: npm run test:architecture

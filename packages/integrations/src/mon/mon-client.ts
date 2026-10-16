@@ -56,7 +56,7 @@ export class MonClient {
   }
 
   async post(endpoint: string, body: JsonValue, signal?: AbortSignal, timeoutMs = 30000): Promise<JsonValue> {
-    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 180000) throw new Error('Invalid Mon request timeout')
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 360000) throw new Error('Invalid Mon request timeout')
     return this.request('POST', endpoint, body, signal, timeoutMs)
   }
 
