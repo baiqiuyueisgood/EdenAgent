@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: windows-portable-${{ github.ref }}
@@ -40,6 +40,8 @@ jobs:
           workspaces: |
             frontend/desktop/native/win32-pointer-observer -> target
 
+      # 只装根依赖：frontend 的 workspace 会被提升到根 node_modules。
+      # 不要用 npm --prefix frontend ci，会因 @eden/api@* 私有工作区包 404。
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
@@ -69,7 +71,8 @@ jobs:
           if (!(Test-Path "$app/resources/node/node.exe")) { throw "缺少私有 Node 运行时" }
           if (!(Test-Path "$app/resources/runtime-manifest.json")) { throw "缺少运行时清单" }
           if (!(Test-Path "$app/resources/edenagent-pointer-observer.exe")) { throw "缺少指针观察器" }
-          "{0:N1} MB" -f ((Get-ChildItem $app -Recurse | Measure-Object Length -Sum).Sum / 1MB)
+          $size = (Get-ChildItem $app -Recurse | Measure-Object Length -Sum).Sum / 1MB
+          Write-Host ("Output: {0:N1} MB" -f $size)
 
       - name: Archive portable package
         shell: pwsh
@@ -85,3 +88,18 @@ jobs:
           path: eden-agent-portable-win32-x64.zip
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish to release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "portable-${{ github.run_number }}"
+          $asset = "eden-agent-portable-win32-x64.zip"
+          gh release view $tag 2>$null | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag $asset --title "Portable ${{ github.run_number }}" --notes "Windows x64 portable build"
+          } else {
+            gh release upload $tag $asset --clobber
+          }
+          Write-Host "Download: https://github.com/${{ github.repository }}/releases/download/$tag/$asset"
